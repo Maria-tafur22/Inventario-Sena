@@ -8,6 +8,7 @@ from django.contrib.auth.models import User
 # CATEGORIA
 # =========================
 class Categoria(models.Model):
+
     nombre = models.CharField(max_length=100, unique=True)
     descripcion = models.TextField(blank=True, null=True)
 
@@ -32,47 +33,95 @@ class Instrumento(models.Model):
     marca = models.CharField(max_length=100, blank=True, null=True)
     modelo = models.CharField(max_length=100, blank=True, null=True)
     fecha_adquisicion = models.DateField(blank=True, null=True)
-    categoria = models.ForeignKey(Categoria, on_delete=models.CASCADE)
+
+    categoria = models.ForeignKey(
+        Categoria,
+        on_delete=models.CASCADE
+    )
 
     estado = models.CharField(
         max_length=20,
         choices=ESTADOS,
         default='disponible'
     )
-
-    # Nuevos campos
-    valor_reemplazo = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
-    ubicacion_fisica = models.CharField(max_length=100, blank=True, null=True)
     cantidad = models.PositiveIntegerField(default=1)
-    fecha_creacion = models.DateTimeField(auto_now_add=True, null=True)
-    fecha_actualizacion = models.DateTimeField(auto_now=True)
 
-    def cambiar_estado(self, nuevo_estado, usuario=None, observacion=""):
+
+    # =========================
+    # CAMBIAR ESTADO
+    # =========================
+    def cambiar_estado(self, nuevo_estado, usuario=None, observacion=None):
+
+        estado_anterior = self.estado
         self.estado = nuevo_estado
-        self.save()
+        self.save(update_fields=["estado"])
 
         HistorialEstadoInstrumento.objects.create(
             instrumento=self,
-            estado=nuevo_estado,
+            tipo_movimiento="cambio_estado",
+            estado_anterior=estado_anterior,
+            estado_nuevo=nuevo_estado,
             cambiado_por=usuario,
             observacion=observacion
         )
 
+
+    # =========================
+    # GUARDAR INSTRUMENTO
+    # =========================
+    def save(self, *args, **kwargs):
+
+        es_nuevo = self.pk is None
+
+        super().save(*args, **kwargs)
+
+        # Registrar historial si es un instrumento nuevo
+        if es_nuevo:
+            HistorialEstadoInstrumento.objects.create(
+                instrumento=self,
+                tipo_movimiento="registro",
+                estado_anterior=None,
+                estado_nuevo=self.estado,
+                cambiado_por=None,
+                observacion="Registro inicial del instrumento"
+            )
+
+
     def __str__(self):
         return f"{self.nombre} ({self.referencia})"
-
-
 # =========================
-# HISTORIAL ESTADO INSTRUMENTO
+# HISTORIAL MOVIMIENTOS
 # =========================
 class HistorialEstadoInstrumento(models.Model):
+
+    TIPOS_MOVIMIENTO = [
+        ('registro', 'Registro de instrumento'),
+        ('prestamo', 'Préstamo de instrumento'),
+        ('devolucion', 'Devolución de instrumento'),
+        ('reparacion', 'Envío a reparación'),
+        ('baja', 'Baja de instrumento'),
+        ('cambio_estado', 'Cambio manual de estado'),
+    ]
+
     instrumento = models.ForeignKey(
         Instrumento,
         on_delete=models.CASCADE,
-        related_name="historial_estados"
+        related_name="historial_movimientos"
     )
 
-    estado = models.CharField(
+    tipo_movimiento = models.CharField(
+        max_length=20,
+        choices=TIPOS_MOVIMIENTO
+    )
+
+    estado_anterior = models.CharField(
+        max_length=20,
+        choices=Instrumento.ESTADOS,
+        null=True,
+        blank=True
+    )
+
+    estado_nuevo = models.CharField(
         max_length=20,
         choices=Instrumento.ESTADOS
     )
@@ -89,7 +138,7 @@ class HistorialEstadoInstrumento(models.Model):
     observacion = models.TextField(blank=True, null=True)
 
     def __str__(self):
-        return f"{self.instrumento.nombre} - {self.estado} - {self.fecha_cambio}"
+        return f"{self.instrumento.nombre} - {self.tipo_movimiento} - {self.fecha_cambio}"
 
 
 # =========================
@@ -105,7 +154,11 @@ class Perfil(models.Model):
     ]
 
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    rol = models.CharField(max_length=20, choices=ROLES)
+
+    rol = models.CharField(
+        max_length=20,
+        choices=ROLES
+    )
 
     def __str__(self):
         return f"{self.user.username} - {self.rol}"
@@ -122,19 +175,28 @@ class Usuario(models.Model):
     ]
 
     nombre = models.CharField(max_length=100)
-    documento = models.CharField(max_length=20, unique=True)
-    telefono = models.CharField(max_length=20, blank=True, null=True)
-    correo = models.EmailField(blank=True, null=True)
-    tipo = models.CharField(max_length=20, choices=TIPOS, default='estudiante')
-    
-    # Nuevos campos de auditoría
-    fecha_creacion = models.DateTimeField(auto_now_add=True, null=True)
-    fecha_actualizacion = models.DateTimeField(auto_now=True)
-    activo = models.BooleanField(default=True)
 
-    def __str__(self):
-        return f"{self.nombre} ({self.tipo})"
+    documento = models.CharField(
+        max_length=20,
+        unique=True
+    )
 
+    telefono = models.CharField(
+        max_length=20,
+        blank=True,
+        null=True
+    )
+
+    correo = models.EmailField(
+        blank=True,
+        null=True
+    )
+
+    tipo = models.CharField(
+        max_length=20,
+        choices=TIPOS,
+        default='estudiante'
+    )
 
 # =========================
 # PRESTAMO
@@ -142,56 +204,110 @@ class Usuario(models.Model):
 class Prestamo(models.Model):
 
     ESTADOS = [
-        ('activo', 'Activo'),
-        ('devuelto', 'Devuelto'),
+        ('disponible', 'Disponible'),
+        ('enuso', 'En uso'),
+        ('reparacion', 'Reparación'),
     ]
 
-    instrumento = models.ForeignKey(Instrumento, on_delete=models.CASCADE)
-    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
-    fecha_prestamo = models.DateField(auto_now_add=True)
+    instrumento = models.ForeignKey(
+        Instrumento,
+        on_delete=models.CASCADE
+    )
+
+    usuario = models.ForeignKey(
+        Usuario,
+        on_delete=models.CASCADE
+    )
+
+    fecha_prestamo = models.DateField(blank=True, null=True)
     fecha_devolucion = models.DateField(blank=True, null=True)
-    fecha_vencimiento = models.DateField(blank=True, null=True)
-    estado = models.CharField(max_length=20, choices=ESTADOS, default='activo')
-    
-    # Nuevos campos
+
+    estado = models.CharField(
+        max_length=20,
+        choices=ESTADOS,
+        default='disponible'
+    )
+
     observaciones = models.TextField(blank=True, null=True)
-    dias_permitidos = models.PositiveIntegerField(default=7)
-    fecha_creacion = models.DateTimeField(auto_now_add=True, null=True)
-    fecha_actualizacion = models.DateTimeField(auto_now=True)
 
     def clean(self):
-        if self.estado == 'activo' and self.instrumento.estado != 'disponible':
+
+        if self.estado == 'enuso' and self.instrumento.estado != 'disponible':
             raise ValidationError("El instrumento no está disponible.")
 
     def save(self, *args, **kwargs):
+
         self.full_clean()
 
-        usuario_sistema = None
-        if hasattr(self, '_usuario_sistema'):
-            usuario_sistema = self._usuario_sistema
+        usuario_sistema = getattr(self, '_usuario_sistema', None)
 
-        # Calcular fecha de vencimiento
-        if self.estado == 'activo' and not self.fecha_vencimiento:
-            self.fecha_vencimiento = self.fecha_prestamo + timezone.timedelta(days=self.dias_permitidos)
-
-        if self.estado == 'activo':
-            self.instrumento.cambiar_estado('prestado', usuario_sistema, "Préstamo generado")
-
-        if self.estado == 'devuelto':
-            if not self.fecha_devolucion:
-                self.fecha_devolucion = timezone.now().date()
-
-            self.instrumento.cambiar_estado('disponible', usuario_sistema, "Instrumento devuelto")
+        if not self.fecha_prestamo:
+            self.fecha_prestamo = timezone.now().date()
 
         super().save(*args, **kwargs)
 
-    @staticmethod
-    def prestamos_vencidos():
-        limite = timezone.now().date() - timezone.timedelta(days=7)
-        return Prestamo.objects.filter(
-            estado='activo',
-            fecha_prestamo__lt=limite
+        # SINCRONIZAR ESTADO DEL INSTRUMENTO
+
+        if self.estado == 'enuso':
+
+            estado_anterior = self.instrumento.estado
+
+            self.instrumento.estado = 'prestado'
+            self.instrumento.save(update_fields=["estado"])
+
+            HistorialEstadoInstrumento.objects.create(
+                instrumento=self.instrumento,
+                tipo_movimiento="prestamo",
+                estado_anterior=estado_anterior,
+                estado_nuevo="prestado",
+                cambiado_por=usuario_sistema,
+                observacion="Instrumento prestado"
+            )
+
+        elif self.estado == 'disponible':
+
+            if not self.fecha_devolucion:
+                self.fecha_devolucion = timezone.now().date()
+
+            estado_anterior = self.instrumento.estado
+
+            self.instrumento.estado = 'disponible'
+            self.instrumento.save(update_fields=["estado"])
+
+            HistorialEstadoInstrumento.objects.create(
+                instrumento=self.instrumento,
+                tipo_movimiento="devolucion",
+                estado_anterior=estado_anterior,
+                estado_nuevo="disponible",
+                cambiado_por=usuario_sistema,
+                observacion="Instrumento devuelto"
+            )
+
+        elif self.estado == 'reparacion':
+
+            estado_anterior = self.instrumento.estado
+
+            self.instrumento.estado = 'mantenimiento'
+            self.instrumento.save(update_fields=["estado"])
+
+            HistorialEstadoInstrumento.objects.create(
+                instrumento=self.instrumento,
+                tipo_movimiento="reparacion",
+                estado_anterior=estado_anterior,
+                estado_nuevo="mantenimiento",
+                cambiado_por=usuario_sistema,
+                observacion="Instrumento enviado a reparación"
+            )
+
+    @classmethod
+    def prestamos_vencidos(cls):
+        """Retorna préstamos vencidos y no devueltos."""
+        hoy = timezone.now().date()
+        return cls.objects.filter(
+            estado='enuso',
+            fecha_vencimiento__lt=hoy,
+            fecha_devolucion__isnull=True
         )
 
     def __str__(self):
-        return f"{self.instrumento.nombre} - {self.usuario.nombre}"
+        return f"Préstamo de {self.instrumento.nombre} a {self.usuario.nombre}"

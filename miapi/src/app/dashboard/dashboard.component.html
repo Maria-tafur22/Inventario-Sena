@@ -1,0 +1,373 @@
+<!-- DASHBOARD -->
+<div class="dashboard">
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="header-left">
+                <div class="header-logo">
+                    <img src="assets/logos/logo.png" alt="Logo Conservatorio del Huila" class="logo-image">
+                </div>
+                <div class="header-title">
+                    <h1>Sistema de Inventario</h1>
+                    <p>Conservatorio del Huila</p>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="user-info">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                    </svg>
+                    <div class="user-details">
+                        <p id="userName">{{ currentUser?.username }}</p>
+                        <p id="userRole">{{ currentUser?.rol }}</p>
+                    </div>
+                </div>
+                <button class="btn btn-secondary" (click)="logout()">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
+                    </svg>
+                    <span class="hide-mobile">Salir</span>
+                </button>
+                <button class="btn btn-secondary" (click)="openReports()">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+                    </svg>
+                    <span class="hide-mobile">Reportes</span>
+                </button>
+                <div class="dropdown">
+                    <button class="dropdown-button" (click)="toggleDropdown()">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                        </svg>
+                        <span class="hide-mobile">Registrar</span>
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M7 10l5 5 5-5z"/>
+                        </svg>
+                    </button>
+                    <div id="dropdownMenu" class="dropdown-menu">
+                        <!-- Opción: Registrar Instrumento (solo administrador) -->
+                        <div *ngIf="currentUser?.rol === 'administrador'" class="dropdown-item" (click)="openInstrumentForm(); toggleDropdown();">
+                            <div class="dropdown-icon blue">
+                                <svg viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M20 6h-2.18c.11-.31.18-.65.18-1 0-1.66-1.34-3-3-3-1.05 0-1.96.54-2.5 1.35l-.5.67-.5-.68C10.96 2.54 10.05 2 9 2 7.34 2 6 3.34 6 5c0 .35.07.69.18 1H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-5-2c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zM9 4c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm11 15H4v-2h16v2zm0-5H4V8h5.08L7 10.83 8.62 12 11 8.76l1-1.36 1 1.36L15.38 12 17 10.83 14.92 8H20v6z"/>
+                                </svg>
+                            </div>
+                            <div class="dropdown-text">
+                                <h4>Instrumento Nuevo</h4>
+                                <p>Registrar instrumento al inventario</p>
+                            </div>
+                        </div>
+
+                        <!-- Opción: Instrumento Deshabilitado (almacenista) -->
+                        <div *ngIf="currentUser?.rol === 'almacenista'" class="dropdown-item" style="opacity: 0.5; cursor: not-allowed;" title="Solo administrador puede agregar instrumentos">
+                            <div class="dropdown-icon blue" style="opacity: 0.5;">
+                                <svg viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M20 6h-2.18c.11-.31.18-.65.18-1 0-1.66-1.34-3-3-3-1.05 0-1.96.54-2.5 1.35l-.5.67-.5-.68C10.96 2.54 10.05 2 9 2 7.34 2 6 3.34 6 5c0 .35.07.69.18 1H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-5-2c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zM9 4c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm11 15H4v-2h16v2zm0-5H4V8h5.08L7 10.83 8.62 12 11 8.76l1-1.36 1 1.36L15.38 12 17 10.83 14.92 8H20v6z"/>
+                                </svg>
+                            </div>
+                            <div class="dropdown-text">
+                                <h4>Instrumento Nuevo</h4>
+                                <p style="color: #6B7280; font-size: 0.75rem;">Solo disponible para administrador</p>
+                            </div>
+                        </div>
+
+                        <!-- Opción: Registrar Préstamo (admin y almacenista) -->
+                        <div class="dropdown-item" (click)="openLoanForm(); toggleDropdown();">
+                            <div class="dropdown-icon green">
+                                <svg viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/>
+                                </svg>
+                            </div>
+                            <div class="dropdown-text">
+                                <h4>Préstamo</h4>
+                                <p>Prestar instrumento a estudiante</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Alerts -->
+        <div id="alertsPanel"></div>
+
+        <!-- Stats -->
+        <div class="stats-grid" id="statsGrid"></div>
+
+        <!-- Search and Filters -->
+        <div class="search-section">
+            <div class="tabs">
+                <button class="tab active" (click)="switchTab('instruments')">Instrumentos</button>
+                <button class="tab" (click)="switchTab('loans')">Préstamos Activos</button>
+            </div>
+
+            <div id="instrumentsSearch">
+                <div class="search-bar">
+                    <div class="search-input-wrapper">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                        </svg>
+                        <input type="text" id="searchInput" class="search-input" placeholder="Buscar por nombre, código, marca o número de serie..." (input)="filterInstruments()">
+                    </div>
+                    <div class="search-actions">
+                        <button class="btn btn-secondary" id="filterToggle" (click)="toggleFilters()">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"/>
+                            </svg>
+                            Filtros
+                        </button>
+                        <button class="btn btn-secondary" (click)="exportCSV()">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M19 12v7H5v-7H3v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2zm-6 .67l2.59-2.58L17 11.5l-5 5-5-5 1.41-1.41L11 12.67V3h2z"/>
+                            </svg>
+                            Exportar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Filters Panel -->
+                <div id="filtersPanel" class="hidden" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #E5E7EB;">
+                    <div class="form-grid" style="margin-bottom: 1rem;">
+                        <div class="form-group">
+                            <label class="form-label">Categoría</label>
+                            <select id="filterCategoria" class="form-input" (change)="filterInstruments()">
+                                <option value="">Todas las categorías</option>
+                                <option value="Viento Madera">Viento Madera</option>
+                                <option value="Viento Metal">Viento Metal</option>
+                                <option value="Cuerda">Cuerda</option>
+                                <option value="Percusión">Percusión</option>
+                                <option value="Teclado">Teclado</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Estado</label>
+                            <select id="filterEstado" class="form-input" (change)="filterInstruments()">
+                                <option value="">Todos los estados</option>
+                                <option value="Disponible">Disponible</option>
+                                <option value="En Uso">En Uso</option>
+                                <option value="En Reparación">En Reparación</option>
+                                <option value="Fuera de Servicio">Fuera de Servicio</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Condición</label>
+                            <select id="filterCondicion" class="form-input" (change)="filterInstruments()">
+                                <option value="">Todas las condiciones</option>
+                                <option value="Excelente">Excelente</option>
+                                <option value="Buena">Buena</option>
+                                <option value="Regular">Regular</option>
+                                <option value="Requiere Reparación">Requiere Reparación</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <button class="btn-cancel" (click)="clearFilters()" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
+                            Limpiar filtros
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content -->
+        <div id="instrumentsContent">
+            <div class="instruments-grid" id="instrumentsGrid"></div>
+        </div>
+
+        <div id="loansContent" class="hidden">
+            <div id="loansList"></div>
+        </div>
+    </main>
+
+    <!-- MODALS -->
+
+    <!-- Instrumento Modal -->
+    <div id="instrumentModal" class="modal-overlay" (click)="closeInstrumentForm()">
+        <div class="modal" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+                <h2 id="instrumentModalTitle">Registrar Nuevo Instrumento</h2>
+                <button class="btn-close" (click)="closeInstrumentForm()">×</button>
+            </div>
+            <form class="modal-content" (submit)="saveInstrument($event)">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Código *</label>
+                        <input type="text" name="codigo" placeholder="Ej: INS-001" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Nombre *</label>
+                        <input type="text" name="nombre" placeholder="Ej: Guitarra Acústica" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Categoría *</label>
+                        <select name="categoria" required>
+                            <option>Seleccione categoría</option>
+                            <option>Viento Madera</option>
+                            <option>Viento Metal</option>
+                            <option>Cuerda</option>
+                            <option>Percusión</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Marca</label>
+                        <input type="text" name="marca" placeholder="Ej: Yamaha">
+                    </div>
+                    <div class="form-group">
+                        <label>Modelo</label>
+                        <input type="text" name="modelo" placeholder="Ej: FG720S">
+                    </div>
+                    <div class="form-group">
+                        <label>Número de Serie</label>
+                        <input type="text" name="numeroSerie" placeholder="Ej: ABC123456">
+                    </div>
+                    <div class="form-group">
+                        <label>Fecha de Adquisición</label>
+                        <input type="date" name="fechaAdquisicion">
+                    </div>
+                    <div class="form-group">
+                        <label>Valor de Adquisición</label>
+                        <input type="number" name="valorAdquisicion" placeholder="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Estado *</label>
+                        <select name="estado" required>
+                            <option>Disponible</option>
+                            <option>En Uso</option>
+                            <option>En Reparación</option>
+                            <option>Fuera de Servicio</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Condición *</label>
+                        <select name="condicion" required>
+                            <option>Excelente</option>
+                            <option>Buena</option>
+                            <option>Regular</option>
+                            <option>Requiere Reparación</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Ubicación</label>
+                        <input type="text" name="ubicacion" placeholder="Ej: Sala 201">
+                    </div>
+                    <div class="form-group form-full">
+                        <label>Observaciones</label>
+                        <textarea name="observaciones" placeholder="Notas adicionales..." rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-cancel" (click)="closeInstrumentForm()">Cancelar</button>
+                    <button type="submit" class="btn-primary">Guardar Instrumento</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Préstamo Modal -->
+    <div id="loanModal" class="modal-overlay" (click)="closeLoanForm()">
+        <div class="modal" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+                <h2>Registrar Nuevo Préstamo</h2>
+                <button class="btn-close" (click)="closeLoanForm()">×</button>
+            </div>
+            <form class="modal-content" (submit)="saveLoan($event)">
+                <div class="form-grid">
+                    <div class="form-group form-full">
+                        <label>Instrumento *</label>
+                        <select id="loanInstrumentSelect" name="instrumentoId" required>
+                            <option>Seleccione instrumento</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Nombre del Estudiante *</label>
+                        <input type="text" name="estudianteNombre" placeholder="Ej: Juan Pérez" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Identificación del Estudiante *</label>
+                        <input type="text" name="estudianteIdentificacion" placeholder="Ej: 1234567890" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Fecha de Préstamo *</label>
+                        <input type="date" name="fechaPrestamo" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Devolución Estimada</label>
+                        <input type="date" name="fechaDevolucionEstimada">
+                    </div>
+                    <div class="form-group form-full">
+                        <label>Observaciones</label>
+                        <textarea name="observaciones" placeholder="Notas sobre el préstamo..." rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-cancel" (click)="closeLoanForm()">Cancelar</button>
+                    <button type="submit" class="btn-primary">Registrar Préstamo</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Devolución Modal -->
+    <div id="returnModal" class="modal-overlay" (click)="closeReturnForm()">
+        <div class="modal" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+                <h2>Devolver Instrumento</h2>
+                <button class="btn-close" (click)="closeReturnForm()">×</button>
+            </div>
+            <div id="returnLoanInfo"></div>
+            <form class="modal-content" (submit)="saveReturn($event)">
+                <div class="form-grid">
+                    <div class="form-group form-full">
+                        <label>Condición Actual del Instrumento *</label>
+                        <select name="condicion" required>
+                            <option>Excelente</option>
+                            <option>Buena</option>
+                            <option>Regular</option>
+                            <option>Requiere Reparación</option>
+                        </select>
+                    </div>
+                    <div class="form-group form-full">
+                        <label>Observaciones de Devolución</label>
+                        <textarea name="observaciones" placeholder="Notas sobre el estado del instrumento..." rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-cancel" (click)="closeReturnForm()">Cancelar</button>
+                    <button type="submit" class="btn-primary">Confirmar Devolución</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Reportes Modal -->
+    <div id="reportsModal" class="modal-overlay" (click)="closeReports()">
+        <div class="modal" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+                <h2>Reportes</h2>
+                <button class="btn-close" (click)="closeReports()">×</button>
+            </div>
+            <div class="modal-content" style="padding: 2rem;">
+                <div id="reportsContent"></div>
+                <div style="margin-top: 2rem; display: flex; gap: 1rem;">
+                    <button class="btn-secondary" (click)="exportCSV()" style="flex: 1;">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5.04-6.71l-2.75 3.54h2.86l2.12-2.85-4.24-3.25z"/>
+                        </svg>
+                        Descargar CSV
+                    </button>
+                    <button class="btn-secondary" (click)="exportReportJSON()" style="flex: 1;">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                        </svg>
+                        Descargar JSON
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
