@@ -31,7 +31,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: miapi
+        working-directory: frontend_react_ev03
 
     steps:
       - name: Checkout code
@@ -42,7 +42,7 @@ jobs:
         with:
           node-version: "22"
           cache: "npm"
-          cache-dependency-path: miapi/package-lock.json
+          cache-dependency-path: frontend_react_ev03/package-lock.json
 
       - name: Install frontend dependencies
         run: npm ci
