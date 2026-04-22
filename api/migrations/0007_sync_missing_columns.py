@@ -1,6 +1,40 @@
 from django.db import migrations
 
 
+def sync_missing_columns(apps, schema_editor):
+    if schema_editor.connection.vendor != 'postgresql':
+        return
+
+    statements = [
+        """
+        ALTER TABLE api_instrumento
+            ADD COLUMN IF NOT EXISTS ubicacion_fisica varchar(100) NULL,
+            ADD COLUMN IF NOT EXISTS valor_reemplazo numeric(10, 2) NULL,
+            ADD COLUMN IF NOT EXISTS fecha_creacion timestamp with time zone NULL,
+            ADD COLUMN IF NOT EXISTS fecha_actualizacion timestamp with time zone NOT NULL DEFAULT NOW();
+        """,
+        """
+        ALTER TABLE api_usuario
+            ADD COLUMN IF NOT EXISTS activo boolean NOT NULL DEFAULT TRUE,
+            ADD COLUMN IF NOT EXISTS fecha_creacion timestamp with time zone NULL,
+            ADD COLUMN IF NOT EXISTS fecha_actualizacion timestamp with time zone NOT NULL DEFAULT NOW(),
+            ADD COLUMN IF NOT EXISTS tipo varchar(20) NOT NULL DEFAULT 'estudiante';
+        """,
+        """
+        ALTER TABLE api_prestamo
+            ADD COLUMN IF NOT EXISTS dias_permitidos integer NOT NULL DEFAULT 7,
+            ADD COLUMN IF NOT EXISTS fecha_creacion timestamp with time zone NULL,
+            ADD COLUMN IF NOT EXISTS fecha_actualizacion timestamp with time zone NOT NULL DEFAULT NOW(),
+            ADD COLUMN IF NOT EXISTS fecha_vencimiento date NULL,
+            ADD COLUMN IF NOT EXISTS observaciones text NULL;
+        """,
+    ]
+
+    with schema_editor.connection.cursor() as cursor:
+        for statement in statements:
+            cursor.execute(statement)
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -8,35 +42,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunSQL(
-            sql="""
-                ALTER TABLE api_instrumento
-                    ADD COLUMN IF NOT EXISTS ubicacion_fisica varchar(100) NULL,
-                    ADD COLUMN IF NOT EXISTS valor_reemplazo numeric(10, 2) NULL,
-                    ADD COLUMN IF NOT EXISTS fecha_creacion timestamp with time zone NULL,
-                    ADD COLUMN IF NOT EXISTS fecha_actualizacion timestamp with time zone NOT NULL DEFAULT NOW();
-            """,
-            reverse_sql=migrations.RunSQL.noop,
-        ),
-        migrations.RunSQL(
-            sql="""
-                ALTER TABLE api_usuario
-                    ADD COLUMN IF NOT EXISTS activo boolean NOT NULL DEFAULT TRUE,
-                    ADD COLUMN IF NOT EXISTS fecha_creacion timestamp with time zone NULL,
-                    ADD COLUMN IF NOT EXISTS fecha_actualizacion timestamp with time zone NOT NULL DEFAULT NOW(),
-                    ADD COLUMN IF NOT EXISTS tipo varchar(20) NOT NULL DEFAULT 'estudiante';
-            """,
-            reverse_sql=migrations.RunSQL.noop,
-        ),
-        migrations.RunSQL(
-            sql="""
-                ALTER TABLE api_prestamo
-                    ADD COLUMN IF NOT EXISTS dias_permitidos integer NOT NULL DEFAULT 7,
-                    ADD COLUMN IF NOT EXISTS fecha_creacion timestamp with time zone NULL,
-                    ADD COLUMN IF NOT EXISTS fecha_actualizacion timestamp with time zone NOT NULL DEFAULT NOW(),
-                    ADD COLUMN IF NOT EXISTS fecha_vencimiento date NULL,
-                    ADD COLUMN IF NOT EXISTS observaciones text NULL;
-            """,
-            reverse_sql=migrations.RunSQL.noop,
-        ),
+        migrations.RunPython(sync_missing_columns, reverse_code=migrations.RunPython.noop),
     ]
